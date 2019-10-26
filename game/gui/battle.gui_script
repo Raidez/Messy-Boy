@@ -1,0 +1,68 @@
+DEFAULT_COLOR = vmath.vector4(1.0, 1.0, 1.0, 1.0)
+SELECTED_COLOR = vmath.vector4(0.84, 0.59, 0.94, 0.6)
+
+function select_action(actions_list, selected_index)
+	local action_name
+	
+	for index, node in pairs(actions_list) do
+		local sel_node
+		local id_node = "" .. gui.get_id(node)
+		local id_sel = "sel_" .. string.sub(id_node, 2, -2)
+		
+		-- check if circle selector exist or create it
+		if not pcall(gui.get_node, id_sel) then
+			local position = gui.get_position(node)
+			local size = gui.get_size(node)
+			size.x = size.x + 30
+			size.y = size.y + 30
+
+			sel_node = gui.new_pie_node(position, size)
+			gui.set_layer(sel_node, "background")
+			gui.set_id(sel_node, id_sel)
+		else
+			sel_node = gui.get_node(id_sel)
+		end
+
+		-- set default color to all actions
+		gui.set_color(sel_node, DEFAULT_COLOR)
+
+		-- change selected action color and get action name
+		if index == selected_index then
+			gui.set_color(sel_node, SELECTED_COLOR)
+			action_name = string.sub(id_node, 2, -2)
+		end
+	end
+
+	return action_name
+end
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+
+	self.actions = {
+		gui.get_node("ultime"),
+		gui.get_node("taunt"),
+		gui.get_node("attack"),
+		gui.get_node("special"),
+		gui.get_node("item"),
+		gui.get_node("dont"),
+		gui.get_node("run")
+	}
+
+	self.selectedIndex = 3
+	select_action(self.actions, self.selectedIndex)
+end
+
+function update(self, dt)
+	select_action(self.actions, self.selectedIndex)
+end
+
+function on_input(self, action_id, action)
+	if self.selectedIndex > 1 and ( action_id == hash("up") or action_id == hash("left") ) and action.pressed then
+		self.selectedIndex = self.selectedIndex - 1
+	elseif self.selectedIndex < 7 and ( action_id == hash("down") or action_id == hash("right") ) and action.pressed then
+		self.selectedIndex = self.selectedIndex + 1
+	elseif action_id == hash("action") then
+		print(select_action(self.actions, self.selectedIndex))
+	end
+end

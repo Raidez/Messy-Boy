@@ -1,0 +1,53 @@
+animations {
+  id: "hero_idle"
+  images {
+    image: "/assets/sprites/hero/hero_idle1.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_idle2.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_idle3.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 10
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "hero_use_item"
+  images {
+    image: "/assets/sprites/hero/hero_useitem1.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem2.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem3.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem4.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem5.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem6.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem7.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem8.png"
+  }
+  images {
+    image: "/assets/sprites/hero/hero_useitem9.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 10
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+margin: 0
+extrude_borders: 2
+inner_padding: 0
