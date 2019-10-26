@@ -19,6 +19,9 @@ images {
 images {
   image: "/assets/sprites/gui/ultime.png"
 }
+images {
+  image: "/assets/sprites/gui/no_ultime.png"
+}
 margin: 0
 extrude_borders: 2
 inner_padding: 0
