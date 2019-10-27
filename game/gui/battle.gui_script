@@ -1,10 +1,12 @@
-DEFAULT_COLOR = vmath.vector4(0.0, 0.0, 0.0, 0.65)
-SELECTED_COLOR = vmath.vector4(0.8, 0.2, 0.5, 0.6)
-SELECTED_SCALE = vmath.vector3(1.0, 1.0, 1.0)
 DEFAULT_SCALE = vmath.vector3(0.4, 0.4, 0.4)
+DEFAULT_COLOR = vmath.vector3(0.35, 0.35, 0.35)
+SELECTED_SCALE = vmath.vector3(1.0, 1.0, 1.0)
+SELECTED_COLOR = vmath.vector3(0.85, 0.7, 1)
+FILLING_COLOR = vmath.vector3(0.7, 0.7, 0.7)
+COMPLETED_COLOR = vmath.vector3(0.2, 0.4, 0.2)
 ACTIONS = { "ultime", "taunt", "attack", "special", "item", "dont", "run" }
 TIPS = {
-	"Use your ultimate attack (if your trash bar reach a point)",
+	"Use your ultimate attack (if you have a green bar)",
 	"Provoke your opponent to get him more close of your weapon",
 	"Attack the first enemy on the line",
 	"Deal your power point for specials attacks",
@@ -16,83 +18,119 @@ TIPS = {
 
 
 function init(self)
-	self.selected_action_index = 3
-	self.actions = {}
-	self.has_ultime = false
 	msg.post(".", "acquire_input_focus")
-	
-	local texture_name = "gui"
-	local center_position = vmath.vector3(gui.get_width() / 2, 80, 0)
-	local offset = 100
-	local position = center_position
-	position.x = position.x - offset * self.selected_action_index
-	local size = vmath.vector3(1, 1, 1)
+	self.index = 3
+	self.actions = {}
+	self.heart = { cur = 19, max = 30 }
+	self.special = { cur = 11, max = 20 }
+	self.ultime = { lvl = 72, bars = {} }
+	self.tips = gui.get_node("tips")
+	self.menu = {}
+	self.cursor = 1
 
-	for index, sprite_name in pairs(ACTIONS) do
-		-- add sprite action
-		local node = gui.new_box_node(position, size)
-		gui.set_size_mode(node, gui.SIZE_MODE_AUTO)
-		gui.set_texture(node, texture_name)
-		gui.play_flipbook(node, sprite_name)
-		gui.set_layer(node, "foreground")
-
-		-- add circle behind
-		local circle_size = gui.get_size(node)
-		circle_size.x = circle_size.x + 30
-		circle_size.y = circle_size.y + 30
-		local circle = gui.new_pie_node(position, circle_size)
-		gui.set_layer(circle, "background")
-		gui.set_id(circle, "c" .. index)
-		gui.set_color(circle, DEFAULT_COLOR)
-
-		-- implement position
-		position.x = position.x + offset
-		
+	-- get actions
+	for index, action_name in pairs(ACTIONS) do
+		local node = gui.get_node("action_" .. action_name)
 		table.insert(self.actions, node)
+	end
+
+	-- get trash bars
+	for i = 1, 5, 1 do
+		local node = gui.get_node("trash_level" .. i)
+		table.insert(self.ultime["bars"], node)
+	end
+end
+
+function render_trash(self)
+	-- hide all bar
+	local size = vmath.vector3(0, 0, 0)
+	for index, node in pairs(self.ultime["bars"]) do
+		gui.set_size(node, size)
+		gui.set_color(node, FILLING_COLOR)
+	end
+	
+	-- show filled bars
+	size = vmath.vector3(100, 40, 0)
+	local filled_bars = self.ultime["lvl"] / 20
+	for i = 1, math.floor(filled_bars), 1 do
+		local node = self.ultime["bars"][i]
+		gui.set_size(node, size)
+		gui.set_color(node, COMPLETED_COLOR)
+	end
+
+	-- resize the current bar
+	local current = self.ultime["bars"][math.floor(filled_bars + 1)]
+	if current ~= nil then
+		size.x = (filled_bars - math.floor(filled_bars)) * size.x
+		gui.set_size(current, size)
 	end
 end
 
 function draw(self)
+	-- render heart/special
+	local heart = gui.get_node("heart_text")
+	gui.set_text(heart, self.heart["cur"] .. "/" .. self.heart["max"])
+	local special = gui.get_node("special_text")
+	gui.set_text(special, self.special["cur"] .. "/" .. self.special["max"])
+
+	-- render trash bars
+	render_trash(self)
+
+	-- switch ultime icon
+	local ultime = gui.get_node("ultime_sprite")
+	if self.ultime["lvl"] < 20 then
+		gui.play_flipbook(ultime, "no_ultime")
+	else
+		gui.play_flipbook(ultime, "ultime")
+	end
+	
+	-- scale n'color actions
 	for index, node in pairs(self.actions) do
-		-- scale n'color
-		local circle = gui.get_node("c" .. index)
-		if index == self.selected_action_index then
+		if index == self.index then
 			gui.set_scale(node, SELECTED_SCALE)
-			gui.set_scale(circle, SELECTED_SCALE)
-			gui.set_color(circle, SELECTED_COLOR)
+			gui.set_color(node, SELECTED_COLOR)
 		else
 			gui.set_scale(node, DEFAULT_SCALE)
-			gui.set_scale(circle, DEFAULT_SCALE)
-			gui.set_color(circle, DEFAULT_COLOR)
+			gui.set_color(node, DEFAULT_COLOR)
 		end
 	end
 
 	-- show tooltip
-	local tip_text = TIPS[self.selected_action_index]
-	local tip = gui.get_node("tip")
-	gui.set_text(tip, tip_text)
-
-	-- switch ultime icon
-	local ultime = self.actions[1]
-	if not self.has_ultime then
-		gui.play_flipbook(ultime, "no_ultime")
-		gui.set_color(ultime, vmath.vector4(1.0, 1.0, 1.0, 0.7))
-	else
-		gui.play_flipbook(ultime, "ultime")
-		gui.set_color(ultime, vmath.vector4(1.0, 1.0, 1.0, 1.0))
-	end
+	gui.set_text(self.tips, TIPS[self.index])
 end
 
 function update(self, dt)
+	if self.heart["cur"] < 0 then self.heart["cur"] = 0 elseif self.heart["cur"] > self.heart["max"] then self.heart["cur"] = self.heart["max"] end
+	if self.special["cur"] < 0 then self.special["cur"] = 0 elseif self.special["cur"] > self.special["max"] then self.special["cur"] = self.special["max"] end
+	if self.ultime["lvl"] < 0 then self.ultime["lvl"] = 0 elseif self.ultime["lvl"] > 100 then self.ultime["lvl"] = 100 end
+	if self.index < 1 then self.index = 1 elseif self.index > 7 then self.index = 7 end
+	if self.cursor < 1 then self.cursor = 1 end
+	
 	draw(self)
 end
 
-function on_input(self, action_id, action)
-	if self.selected_action_index > 1 and action_id == hash("left") and action.pressed then
-		self.selected_action_index = self.selected_action_index - 1
-	elseif self.selected_action_index < 7 and action_id == hash("right") and action.pressed then
-		self.selected_action_index = self.selected_action_index + 1
-	elseif action_id == hash("action") and action.pressed then
-		self.has_ultime = not self.has_ultime
+function on_message(self, message_id, message, sender)
+	if message_id == hash("heart") then
+		if message[1] then self.heart["cur"] = self.heart["cur"] + message[1] end
+		if message[2] then self.heart["max"] = self.heart["max"] + message[2] end
+	elseif message_id == hash("special") then
+		if message[1] then self.special["cur"] = self.special["cur"] + message[1] end
+		if message[2] then self.special["max"] = self.special["max"] + message[2] end
+	elseif message_id == hash("trash") then
+		if message[1] then self.ultime["lvl"] = self.ultime["lvl"] + message[1] end
+	elseif message_id == hash("action") then
+		if message[1] then
+			self.index = self.index + message[1]
+		else
+			msg.post(sender, "action", { ACTIONS[self.index] })
+		end
+	elseif message_id == hash("menu") then
+		if message[1] then
+			self.cursor = self.cursor + message[1]
+		else
+			self.menu = message[2]
+		end
+	elseif message_id == hash("cancel") then
+	elseif message_id == hash("help") then
 	end
 end

@@ -1,0 +1,72 @@
+key_trigger {
+  input: KEY_F1
+  action: "show_help"
+}
+key_trigger {
+  input: KEY_LEFT
+  action: "action_left"
+}
+key_trigger {
+  input: KEY_RIGHT
+  action: "action_right"
+}
+key_trigger {
+  input: KEY_SPACE
+  action: "select_action"
+}
+key_trigger {
+  input: KEY_ENTER
+  action: "select_action"
+}
+key_trigger {
+  input: KEY_BACKSPACE
+  action: "cancel_action"
+}
+key_trigger {
+  input: KEY_1
+  action: "heart_more"
+}
+key_trigger {
+  input: KEY_2
+  action: "heart_less"
+}
+key_trigger {
+  input: KEY_3
+  action: "special_more"
+}
+key_trigger {
+  input: KEY_4
+  action: "special_less"
+}
+key_trigger {
+  input: KEY_5
+  action: "trash_more"
+}
+key_trigger {
+  input: KEY_6
+  action: "trash_less"
+}
+key_trigger {
+  input: KEY_7
+  action: "heart_max_more"
+}
+key_trigger {
+  input: KEY_8
+  action: "heart_max_less"
+}
+key_trigger {
+  input: KEY_9
+  action: "special_max_more"
+}
+key_trigger {
+  input: KEY_0
+  action: "special_max_less"
+}
+key_trigger {
+  input: KEY_UP
+  action: "menu_up"
+}
+key_trigger {
+  input: KEY_DOWN
+  action: "menu_down"
+}
