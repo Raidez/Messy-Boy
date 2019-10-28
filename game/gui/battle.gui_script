@@ -15,18 +15,26 @@ TIPS = {
 	"Escape the battle"
 }
 
+function tablelength(T)
+	local count = 0
+	for _ in pairs(T) do count = count + 1 end
+	return count
+end
+
 
 
 function init(self)
 	msg.post(".", "acquire_input_focus")
-	self.index = 3
+	self.action_index = 3
+	self.cursor_index = 1
 	self.actions = {}
+	self.menus = {}
 	self.heart = { cur = 19, max = 30 }
 	self.special = { cur = 11, max = 20 }
 	self.ultime = { lvl = 72, bars = {} }
 	self.tips = gui.get_node("tips")
-	self.menu = {}
-	self.cursor = 1
+	self.menu = gui.get_node("menu")
+	self.cursor = gui.get_node("select")
 
 	-- get actions
 	for index, action_name in pairs(ACTIONS) do
@@ -41,9 +49,50 @@ function init(self)
 	end
 end
 
+function render_menu(self)
+	-- move menu to current action
+	local menu_size = gui.get_size(self.menu)
+	local action_position = gui.get_position(self.actions[self.action_index])
+	local position = vmath.vector3(action_position.x - menu_size.x / 2, gui.get_position(self.menu).y, 0)
+	gui.set_position(self.menu, position)
+
+	-- clear menu content
+	for i = 1, 5, 1 do
+		local item = gui.get_node("item" .. i)
+		gui.set_text(item, "")
+	end
+
+	-- change menu content
+	for index, content in pairs(self.menus) do
+		local action, cost = content[1], content[2]
+		local item = gui.get_node("item" .. index)
+		local spaces = 21 - string.len(action)
+		local text = action
+		for i = spaces, 2, -1 do
+			text = text .. " "
+		end
+		text = text .. cost
+		gui.set_text(item, text)
+	end
+
+	-- set submenu selector position
+	local position = gui.get_position(self.cursor)
+	position.y = self.cursor_index * -15 + (15 - 4)
+	gui.set_position(self.cursor, position)
+
+	-- show/hide menu
+	if tablelength(self.menus) > 0 then
+		gui.set_size(self.menu, vmath.vector3(200, 85, 0))
+		gui.set_size(self.cursor, vmath.vector3(16, 16, 0))
+	else
+		gui.set_size(self.menu, vmath.vector3())
+		gui.set_size(self.cursor, vmath.vector3())
+	end
+end
+
 function render_trash(self)
 	-- hide all bar
-	local size = vmath.vector3(0, 0, 0)
+	local size = vmath.vector3()
 	for index, node in pairs(self.ultime["bars"]) do
 		gui.set_size(node, size)
 		gui.set_color(node, FILLING_COLOR)
@@ -86,7 +135,7 @@ function draw(self)
 	
 	-- scale n'color actions
 	for index, node in pairs(self.actions) do
-		if index == self.index then
+		if index == self.action_index then
 			gui.set_scale(node, SELECTED_SCALE)
 			gui.set_color(node, SELECTED_COLOR)
 		else
@@ -96,15 +145,18 @@ function draw(self)
 	end
 
 	-- show tooltip
-	gui.set_text(self.tips, TIPS[self.index])
+	gui.set_text(self.tips, TIPS[self.action_index])
+
+	-- render submenu
+	render_menu(self)
 end
 
 function update(self, dt)
 	if self.heart["cur"] < 0 then self.heart["cur"] = 0 elseif self.heart["cur"] > self.heart["max"] then self.heart["cur"] = self.heart["max"] end
 	if self.special["cur"] < 0 then self.special["cur"] = 0 elseif self.special["cur"] > self.special["max"] then self.special["cur"] = self.special["max"] end
 	if self.ultime["lvl"] < 0 then self.ultime["lvl"] = 0 elseif self.ultime["lvl"] > 100 then self.ultime["lvl"] = 100 end
-	if self.index < 1 then self.index = 1 elseif self.index > 7 then self.index = 7 end
-	if self.cursor < 1 then self.cursor = 1 end
+	if self.action_index < 1 then self.action_index = 1 elseif self.action_index > 7 then self.action_index = 7 end
+	if self.cursor_index < 1 then self.cursor_index = 1 elseif self.cursor_index > tablelength(self.menus) then self.cursor_index = tablelength(self.menus) end
 	
 	draw(self)
 end
@@ -120,17 +172,20 @@ function on_message(self, message_id, message, sender)
 		if message[1] then self.ultime["lvl"] = self.ultime["lvl"] + message[1] end
 	elseif message_id == hash("action") then
 		if message[1] then
-			self.index = self.index + message[1]
+			self.action_index = self.action_index + message[1]
+		elseif tablelength(self.menus) > 0 then
+			msg.post(sender, "action", { self.menus[self.cursor_index] })
 		else
-			msg.post(sender, "action", { ACTIONS[self.index] })
+			msg.post(sender, "action", { ACTIONS[self.action_index] })
 		end
 	elseif message_id == hash("menu") then
 		if message[1] then
-			self.cursor = self.cursor + message[1]
+			self.cursor_index = self.cursor_index + message[1]
 		else
-			self.menu = message[2]
+			self.menus = message[2]
 		end
 	elseif message_id == hash("cancel") then
+		self.menus = {}
 	elseif message_id == hash("help") then
 	end
 end

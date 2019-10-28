@@ -2,14 +2,29 @@ function init(self)
 	msg.post(".", "acquire_input_focus")
 	msg.post("@render:", "use_fixed_fit_projection", { near = -1, far = 1 })
 
-	self.menu = false
-	self.help = false
+	self.state = "action" --action, menu, target, wait, help
+	self.action = ""
+end
+
+function send_menu(self, action)
+	self.action = action
+	self.state = "menu"
+	if action == "ultime" then
+		msg.post("/gui#battle", self.state, { [2] = { { "Trash Launcher", 1 } } })
+	elseif action == "special" then
+		msg.post("/gui#battle", self.state, { [2] = { { "Strong attack", 5 }, { "Throw rocks", 2 }, { "Messy", 3 }, { "Stinky ball", 7 } } })
+	elseif action == "item" then
+		msg.post("/gui#battle", self.state, { [2] = { { "Chips", 3 }, { "Banana", 2 }, { "Apple", 5 } } })
+	else
+		self.state = "target"
+	end
 end
 
 function on_message(self, message_id, message, sender)
 	if message_id == hash("action") then
-		if message[1] == "item" then
-			msg.post("/gui#battle", "menu", { [2] = { chips = 2, banane = 1, pomme = 3 } })
+		if self.state == "menu" then
+		else
+			send_menu(self, message[1])
 		end
 	end
 end
@@ -35,19 +50,25 @@ function on_input(self, action_id, action)
 		msg.post("/gui#battle", "special", { [2] = 1 })
 	elseif action_id == hash("special_max_less") and action.pressed then
 		msg.post("/gui#battle", "special", { [2] = -1  })
-	elseif action_id == hash("action_left") and action.pressed then
+	end
+
+	if action_id == hash("action_left") and action.pressed and self.state == "action" then
 		msg.post("/gui#battle", "action", { -1 })
-	elseif action_id == hash("action_right") and action.pressed then
+	elseif action_id == hash("action_right") and action.pressed and self.state == "action" then
 		msg.post("/gui#battle", "action", { 1 })
-	elseif action_id == hash("menu_up") and action.pressed and self.menu then
+	elseif action_id == hash("menu_up") and action.pressed and self.state == "menu" then
 		msg.post("/gui#battle", "menu", { -1 })
-	elseif action_id == hash("menu_down") and action.pressed and self.menu then
+	elseif action_id == hash("menu_down") and action.pressed and self.state == "menu" then
 		msg.post("/gui#battle", "menu", { 1 })
 	elseif action_id == hash("select_action") and action.pressed then
 		msg.post("/gui#battle", "action")
 	elseif action_id == hash("cancel_action") and action.pressed then
 		msg.post("/gui#battle", "cancel")
-	elseif action_id == hash("show_help") and action.pressed then
+		self.state = "action"
+	end
+	
+	if action_id == hash("show_help") and action.pressed then
 		msg.post("/gui#battle", "help")
+		self.state = "help"
 	end
 end

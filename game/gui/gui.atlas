@@ -28,6 +28,19 @@ images {
 images {
   image: "/assets/sprites/gui/trash.png"
 }
+animations {
+  id: "select"
+  images {
+    image: "/assets/sprites/gui/select0.png"
+  }
+  images {
+    image: "/assets/sprites/gui/select1.png"
+  }
+  playback: PLAYBACK_LOOP_FORWARD
+  fps: 5
+  flip_horizontal: 0
+  flip_vertical: 0
+}
 margin: 0
 extrude_borders: 2
 inner_padding: 0
