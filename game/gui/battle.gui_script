@@ -14,6 +14,7 @@ TIPS = {
 	"Do nothing",
 	"Escape the battle"
 }
+TARGETS_POSITION = { 745, 895, 1045, 1195 }
 
 function tablelength(T)
 	local count = 0
@@ -27,6 +28,7 @@ function init(self)
 	msg.post(".", "acquire_input_focus")
 	self.action_index = 3
 	self.cursor_index = 1
+	self.target_index = nil
 	self.actions = {}
 	self.menus = {}
 	self.heart = { cur = 19, max = 30 }
@@ -35,6 +37,7 @@ function init(self)
 	self.tips = gui.get_node("tips")
 	self.menu = gui.get_node("menu")
 	self.cursor = gui.get_node("select")
+	self.target = gui.get_node("target")
 
 	-- get actions
 	for index, action_name in pairs(ACTIONS) do
@@ -149,43 +152,78 @@ function draw(self)
 
 	-- render submenu
 	render_menu(self)
+
+	-- display/hide target
+	if self.target_index then
+		local position = gui.get_position(self.target)
+		local size = vmath.vector3(64, 64, 0)
+		position.x = TARGETS_POSITION[self.target_index]
+		gui.set_position(self.target, position)
+		gui.set_size(self.target, size)
+	else
+		local position = gui.get_position(self.target)
+		local size = vmath.vector3()
+		position.x = TARGETS_POSITION[1]
+		gui.set_position(self.target, position)
+		gui.set_size(self.target, size)
+	end
 end
 
 function update(self, dt)
-	if self.heart["cur"] < 0 then self.heart["cur"] = 0 elseif self.heart["cur"] > self.heart["max"] then self.heart["cur"] = self.heart["max"] end
-	if self.special["cur"] < 0 then self.special["cur"] = 0 elseif self.special["cur"] > self.special["max"] then self.special["cur"] = self.special["max"] end
-	if self.ultime["lvl"] < 0 then self.ultime["lvl"] = 0 elseif self.ultime["lvl"] > 100 then self.ultime["lvl"] = 100 end
+	-- get hero stats
+	msg.post("/hero", "get_stats")
+
+	--
 	if self.action_index < 1 then self.action_index = 1 elseif self.action_index > 7 then self.action_index = 7 end
 	if self.cursor_index < 1 then self.cursor_index = 1 elseif self.cursor_index > tablelength(self.menus) then self.cursor_index = tablelength(self.menus) end
+	if self.target_index and self.target_index < 1 then self.target_index = 1 elseif self.target_index and self.target_index > 4 then self.target_index = 4 end
 	
 	draw(self)
 end
 
 function on_message(self, message_id, message, sender)
 	if message_id == hash("heart") then
-		if message[1] then self.heart["cur"] = self.heart["cur"] + message[1] end
-		if message[2] then self.heart["max"] = self.heart["max"] + message[2] end
+		self.heart = message
 	elseif message_id == hash("special") then
-		if message[1] then self.special["cur"] = self.special["cur"] + message[1] end
-		if message[2] then self.special["max"] = self.special["max"] + message[2] end
-	elseif message_id == hash("trash") then
-		if message[1] then self.ultime["lvl"] = self.ultime["lvl"] + message[1] end
-	elseif message_id == hash("action") then
-		if message[1] then
-			self.action_index = self.action_index + message[1]
-		elseif tablelength(self.menus) > 0 then
-			msg.post(sender, "action", { self.menus[self.cursor_index] })
-		else
-			msg.post(sender, "action", { ACTIONS[self.action_index] })
-		end
-	elseif message_id == hash("menu") then
-		if message[1] then
-			self.cursor_index = self.cursor_index + message[1]
-		else
-			self.menus = message[2]
-		end
-	elseif message_id == hash("cancel") then
+		self.special = message
+	elseif message_id == hash("ultime") then
+		self.ultime["lvl"] = message[1]
+	end
+
+	if message_id == hash("change_action") and message[1] then
+		self.action_index = self.action_index + message[1]
+		sound.play("/gui#move")
+	elseif message_id == hash("select_action") then
+		msg.post(sender, "action", { ACTIONS[self.action_index] })
+		sound.play("/gui#action")
+	end
+
+	if message_id == hash("set_menu") and message[1] then
+		self.menus = message
+	elseif message_id == hash("change_menu") and message[1] then
+		self.cursor_index = self.cursor_index + message[1]
+		sound.play("/gui#move")
+	elseif message_id == hash("select_menu") then
+		msg.post(sender, "menu", { self.menus[self.cursor_index] })
+		sound.play("/gui#action")
+	elseif message_id == hash("cancel_menu") then
 		self.menus = {}
-	elseif message_id == hash("help") then
+		sound.play("/gui#cancel")
+	end
+	
+	if message_id == hash("set_target") and message[1] then
+		self.target_index = message[1]
+	elseif message_id == hash("change_target") and message[1] then
+		self.target_index = self.target_index + message[1]
+		sound.play("/gui#move")
+	elseif message_id == hash("select_target") then
+		msg.post(sender, "target", { self.target_index })
+		sound.play("/gui#action")
+	elseif message_id == hash("cancel_target") then
+		self.target_index = nil
+		sound.play("/gui#cancel")
+	end
+	
+	if message_id == hash("show_help") then
 	end
 end

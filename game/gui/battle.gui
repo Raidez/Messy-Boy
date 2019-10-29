@@ -443,8 +443,8 @@ nodes {
 }
 nodes {
   position {
-    x: 656.0
-    y: 507.0
+    x: 745.0
+    y: 500.0
     z: 0.0
     w: 1.0
   }
@@ -493,7 +493,7 @@ nodes {
   clipping_inverted: false
   alpha: 1.0
   template_node_child: false
-  size_mode: SIZE_MODE_AUTO
+  size_mode: SIZE_MODE_MANUAL
 }
 nodes {
   position {

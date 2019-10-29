@@ -1,0 +1,57 @@
+function init(self)
+	self.heart = { cur = 10, max = 10 }
+	self.special = { cur = 10, max = 10 }
+	self.trash = 0
+
+	self.power = 1
+	self.defense = 1
+
+	self.ultimes = {
+		{ "Trash Launcher", 1 }
+	}
+	self.specials = {
+		{ "Strong attack", 3 },
+		{ "Throw rocks", 1 },
+		{ "Messy", 2 },
+		{ "Stinky ball", 5 }
+	}
+	self.items = {
+		{ "Chips", 3 },
+		{ "Banana", 2 },
+		{ "Apple", 5 }
+	}
+end
+
+function update(self, dt)
+	if self.heart["cur"] < 0 then self.heart["cur"] = 0 elseif self.heart["cur"] > self.heart["max"] then self.heart["cur"] = self.heart["max"] end
+	if self.special["cur"] < 0 then self.special["cur"] = 0 elseif self.special["cur"] > self.special["max"] then self.special["cur"] = self.special["max"] end
+	if self.trash < 0 then self.trash = 0 elseif self.trash > 100 then self.trash = 100 end
+end
+
+function on_use(self, type, which)
+	if type == "item" then
+		for index, item in pairs(self.items) do
+			local name, quantity = item[1], item[2]
+			if name == which and quantity > 0 then
+				self.items[index][2] = quantity - 1
+				msg.post("#sprite", "play_animation", {id = hash("hero_use_item")})
+			end
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("get_stats") then
+		msg.post(sender, "heart", self.heart)
+		msg.post(sender, "special", self.special)
+		msg.post(sender, "ultime", { self.trash })
+	end
+
+	if message_id == hash("show_ultime") then msg.post("/gui", "set_menu", self.ultimes)
+	elseif message_id == hash("show_special") then msg.post("/gui", "set_menu", self.specials)
+	elseif message_id == hash("show_item") then msg.post("/gui", "set_menu", self.items) end
+
+	if message_id == hash("use_item") and message then
+		on_use(self, "item", message[1])
+	end
+end
